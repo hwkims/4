@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Quiz Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    .question {
+      margin-bottom: 20px;
+    }
+
+    #question-text {
+      color: #000;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .options {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .options li {
+      margin-bottom: 10px;
+    }
+
+    .options label {
+      display: block;
+      font-size: 18px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #3e8e41;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Quiz Game</h1>
+  <div id="quiz-container">
+    <div class="question">
+      <p id="question-text"></p>
+      <ul class="options">
+        <li>
+          <input type="radio" id="option1" name="option">
+          <label for="option1" id="option1-label"></label>
+        </li>
+        <li>
+          <input type="radio" id="option2" name="option">
+          <label for="option2" id="option2-label"></label>
+        </li>
+        <li>
+          <input type="radio" id="option3" name="option">
+          <label for="option3" id="option3-label"></label>
+        </li>
+        <li>
+          <input type="radio" id="option4" name="option">
+          <label for="option4" id="option4-label"></label>
+        </li>
+      </ul>
+    </div>
+    <button id="submit-button">제출</button>
+    <p id="result-text"></p>
+
+    <button id="next-button" style="display: none;">다음 문제</button>
+
+    <script>
+      const quizContainer = document.getElementById('quiz-container');
+      const questionText = document.getElementById('question-text');
+      const options = document.querySelectorAll('.options li');
+      const submitButton = document.getElementById('submit-button');
+      const resultText = document.getElementById('result-text');
+      const nextButton = document.getElementById('next-button');
+
+      const quiz = {
+        currentQuestion: 0,
+        score: 0,
+        questions: [],
+        setupQuiz: function () {
+          const currentQuestionData = this.questions[this.currentQuestion];
+          questionText.textContent = currentQuestionData['문제 내용'];
+          const optionsArray = [
+            { label: currentQuestionData['정답'], value: currentQuestionData['정답'] },
+            { label: currentQuestionData['오답1'], value: currentQuestionData['오답1'] },
+            { label: currentQuestionData['오답2'], value: currentQuestionData['오답2'] },
+            { label: currentQuestionData['오답3'], value: currentQuestionData['오답3'] },
+          ];
+          this.shuffleOptions(optionsArray);
+          options.forEach((option, index) => {
+            option.querySelector('label').textContent = optionsArray[index].label;
+            option.querySelector('input').value = optionsArray[index].value;
+            option.querySelector('input').checked = false; // Reset radio button state
+          });
+        },
+        shuffleOptions: function (optionsArray) {
+          for (let i = optionsArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [optionsArray[i], optionsArray[j]] = [optionsArray[j], optionsArray[i]];
+          }
+        },
+        checkAnswer: function (selectedOption) {
+          const correctAnswer = this.questions[this.currentQuestion]['정답'];
+          if (selectedOption.value === correctAnswer) {
+            this.score++;
+            resultText.textContent = `Correct! Your score is ${this.score} out of ${this.questions.length}`;
+          } else {
+            resultText.textContent = `Incorrect. The correct answer is ${correctAnswer}. Your score is ${this.score} out of ${this.questions.length}`;
+          }
+          this.currentQuestion++;
+          if (this.currentQuestion < this.questions.length) {
+            this.setupQuiz();
+          } else {
+            resultText.textContent = `Your final score is ${this.score} out of ${this.questions.length}`;
+            submitButton.style.display = 'none';
+            nextButton.style.display = 'none';
+          }
+        },
+      };
+
+      // Load CSV data
+      fetch('path/to/q.csv')
+        .        then(response => response.text())
+        .then(data => {
+          const csvData = data.split("\n");
+          const headers = csvData[0].split(",");
+          quiz.questions = [];
+
+          for (let i = 1; i < csvData.length; i++) {
+            const row = csvData[i].split(",");
+            const obj = {};
+            for (let j = 0; j < headers.length; j++) {
+              obj[headers[j]] = row[j];
+            }
+            quiz.questions.push(obj);
+          }
+
+          // Start the game
+          startGame();
+        });
+
+      function startGame() {
+        quiz.setupQuiz();
+        submitButton.style.display = 'block';
+      }
+
+      // Submit button event listener
+      submitButton.addEventListener('click', () => {
+        const selectedOption = document.querySelector('input[name="option"]:checked');
+        if (selectedOption) {
+          quiz.checkAnswer(selectedOption);
+        } else {
+          const errorText = document.createElement('p');
+          errorText.textContent = 'Please select an option!';
+          errorText.style.color = 'red';
+          quizContainer.appendChild(errorText);
+          setTimeout(() => {
+            quizContainer.removeChild(errorText);
+          }, 2000);
+        }
+      });
+
+      // Next button event listener
+      nextButton.addEventListener('click', () => {
+        quiz.currentQuestion++;
+        if (quiz.currentQuestion < quiz.questions.length) {
+          quiz.setupQuiz();
+          submitButton.style.display = 'block';
+          nextButton.style.display = 'none';
+        } else {
+          resultText.textContent = `Your final score is ${quiz.score} out of ${quiz.questions.length}`;
+          submitButton.style.display = 'none';
+          nextButton.style.display = 'none';
+        }
+      });
+    </script>
+  </body>
+</html>
