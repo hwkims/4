@@ -5,7 +5,13 @@
   <title>Quiz Game</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      background: url("f.png") no-repeat;
+      color: #fff;
+    }
+    #quiz-container{
+      position: absolute;
+      top: 150px;
+      left: 500px;
     }
 
     .question {
@@ -13,8 +19,8 @@
     }
 
     #question-text {
-      color: #000;
-      font-size: 24px;
+      color: #fff;
+      font-size: 34px;
       font-weight: bold;
     }
 
@@ -22,6 +28,9 @@
       list-style: none;
       padding: 0;
       margin: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
 
     .options li {
@@ -30,7 +39,7 @@
 
     .options label {
       display: block;
-      font-size: 18px;
+      font-size: 50px;
     }
 
     button {
@@ -50,7 +59,7 @@
 </head>
 
 <body>
-  <h1>Quiz Game</h1>
+ 
   <div id="quiz-container">
     <div class="question">
       <p id="question-text"></p>
@@ -75,8 +84,7 @@
     </div>
     <button id="submit-button">제출</button>
     <p id="result-text"></p>
-
-    <button id="next-button" style="display: none;">다음 문제</button>
+    <p id="timer-text"></p>
 
     <script>
       const quizContainer = document.getElementById('quiz-container');
@@ -84,7 +92,7 @@
       const options = document.querySelectorAll('.options li');
       const submitButton = document.getElementById('submit-button');
       const resultText = document.getElementById('result-text');
-      const nextButton = document.getElementById('next-button');
+      const timerText = document.getElementById('timer-text');
 
       const quiz = {
         currentQuestion: 0,
@@ -105,6 +113,7 @@
             option.querySelector('input').value = optionsArray[index].value;
             option.querySelector('input').checked = false; // Reset radio button state
           });
+          this.startTimer();
         },
         shuffleOptions: function (optionsArray) {
           for (let i = optionsArray.length - 1; i > 0; i--) {
@@ -120,20 +129,43 @@
           } else {
             resultText.textContent = `Incorrect. The correct answer is ${correctAnswer}. Your score is ${this.score} out of ${this.questions.length}`;
           }
+          this.showAnswer();
+          setTimeout(() => {
+            this.nextQuestion();
+          }, 3000);
+        },
+        startTimer: function () {
+          let timeLeft = 9;
+          const timerInterval = setInterval(() => {
+            timerText.textContent = `Time left: ${timeLeft} seconds`;
+            timeLeft--;
+            if (timeLeft < 0) {
+              clearInterval(timerInterval);
+              this.showAnswer();
+              setTimeout(() => {
+                this.nextQuestion();
+              }, 3000);
+            }
+          }, 1000);
+        },
+        showAnswer: function () {
+          const correctAnswer = this.questions[this.currentQuestion]['정답'];
+          resultText.textContent = `The correct answer is ${correctAnswer}.`;
+        },
+        nextQuestion: function () {
           this.currentQuestion++;
           if (this.currentQuestion < this.questions.length) {
             this.setupQuiz();
           } else {
             resultText.textContent = `Your final score is ${this.score} out of ${this.questions.length}`;
             submitButton.style.display = 'none';
-            nextButton.style.display = 'none';
           }
         },
       };
 
       // Load CSV data
-      fetch('path/to/q.csv')
-        .        then(response => response.text())
+      fetch('q.csv')
+        .then(response => response.text())
         .then(data => {
           const csvData = data.split("\n");
           const headers = csvData[0].split(",");
@@ -149,13 +181,8 @@
           }
 
           // Start the game
-          startGame();
+          quiz.setupQuiz();
         });
-
-      function startGame() {
-        quiz.setupQuiz();
-        submitButton.style.display = 'block';
-      }
 
       // Submit button event listener
       submitButton.addEventListener('click', () => {
@@ -170,20 +197,6 @@
           setTimeout(() => {
             quizContainer.removeChild(errorText);
           }, 2000);
-        }
-      });
-
-      // Next button event listener
-      nextButton.addEventListener('click', () => {
-        quiz.currentQuestion++;
-        if (quiz.currentQuestion < quiz.questions.length) {
-          quiz.setupQuiz();
-          submitButton.style.display = 'block';
-          nextButton.style.display = 'none';
-        } else {
-          resultText.textContent = `Your final score is ${quiz.score} out of ${quiz.questions.length}`;
-          submitButton.style.display = 'none';
-          nextButton.style.display = 'none';
         }
       });
     </script>
